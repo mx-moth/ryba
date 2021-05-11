@@ -1,0 +1,9 @@
+[build-system]
+requires = [
+    "setuptools >= 35.0.2",
+	"wheel",
+]
+build-backend = "setuptools.build_meta"
+
+[tool.flake8]
+extend-ignore = "E501"

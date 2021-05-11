@@ -1,0 +1,6 @@
+-r requirements.txt
+pyproject-flake8
+isort
+mypy
+build
+twine
