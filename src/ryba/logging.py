@@ -1,6 +1,8 @@
 import enum
 import logging
 import logging.config
+import shlex
+import typing as t
 from logging import CRITICAL, DEBUG, ERROR, INFO, NOTSET, WARNING, getLogger
 
 from . import config
@@ -56,6 +58,13 @@ def setup_logging(config: config.Config) -> None:
             },
         },
     })
+
+
+def command(command: t.List[str], hostname: t.Optional[str]) -> str:
+    prefix = '$ '
+    if hostname:
+        prefix = hostname + prefix
+    return prefix + shlex.join(command)
 
 
 def style(code: str, message: str) -> str:

@@ -1,5 +1,4 @@
 import datetime
-import shlex
 
 from .. import constants, directories, logging, targets
 
@@ -26,7 +25,6 @@ def create_snapshot(
         "cp", "--archive", "--link", "--no-target-directory", "--force",
         str(context.make_path(current)), str(context.make_path(snapshot)),
     ]
-    logger.log(logging.DEBUG, "remote $ %s", shlex.join(cmd))
     if not dry_run:
         context.execute(cmd)
         context.write_file(

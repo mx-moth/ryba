@@ -10,8 +10,10 @@ import attr
 import paramiko.config
 import spur
 
-from .. import exceptions
+from .. import exceptions, logging
 from . import _base
+
+logger = logging.getLogger(__name__)
 
 
 @attr.s(auto_attribs=True, kw_only=True)
@@ -101,6 +103,7 @@ class SSHContext(_base.TargetContext):
         return self.target.path / path
 
     def execute(self, cmd: t.List[str]) -> None:
+        logger.log(logging.DEBUG, logging.command(cmd, hostname=self.target.hostname))
         self.client.run(cmd, stdout=sys.stdout, stderr=sys.stderr)
 
     def exists(self, path: pathlib.Path) -> bool:

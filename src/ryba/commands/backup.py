@@ -124,9 +124,8 @@ def _send_files(
 
     if not context.exists(directory.target_path):
         logger.log(logging.INFO, "Creating destination directory %r", directory.target_path)
-        cmd = ["mkdir", "-p", str(context.make_path(directory.target_path))]
-        logger.log(logging.DEBUG, "remote $ %s", shlex.join(cmd))
         if not dry_run:
+            cmd = ["mkdir", "-p", str(context.make_path(directory.target_path))]
             context.execute(cmd)
 
     logger.log(logging.INFO, "Running rsync")
