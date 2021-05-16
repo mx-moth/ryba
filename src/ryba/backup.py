@@ -152,8 +152,11 @@ def _send_files(
     # The following flags are inspired by python-rsync-system-backup
     command = ['rsync']
 
+    command.append('--human-readable')
     if verbose:
         command.append('--verbose')
+    else:
+        command.append('--info=progress2,stats')
     if dry_run:
         command.append('--dry-run')
 
