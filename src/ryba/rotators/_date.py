@@ -128,8 +128,8 @@ class DateBucket(Rotator):
 
         winners: t.Dict[targets.Backup, t.List[str]] = collections.defaultdict(list)
         for bucket in buckets:
-            for to_keep in bucket.get_winners():
-                winners[to_keep].append(bucket.name)
+            for nth, to_keep in enumerate(bucket.get_winners(), start=1):
+                winners[to_keep].append(f"{bucket.name} ({nth})")
 
         winners[backups[-1]].append("Latest")
 
