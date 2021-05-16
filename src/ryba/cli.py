@@ -60,7 +60,7 @@ def _get_argparse_parser() -> argparse.ArgumentParser:
         help="Turn off all output except errors",
         action="store_const", const=0,
     )
-    parser.set_defaults(func=cmd_backup)
+    parser.set_defaults(func=cmd_default)
 
     subparsers = parser.add_subparsers(title="Commands")
     backup = subparsers.add_parser(
@@ -90,7 +90,7 @@ def _get_argparse_parser() -> argparse.ArgumentParser:
             "Defaults to the current UTC time."
         ),
         type=_parse_datetime,
-        default=datetime.datetime.now().replace(tzinfo=datetime.timezone.utc),
+        default=_utc_now(),
     )
     backup.set_defaults(func=cmd_backup)
 
@@ -120,6 +120,10 @@ def _get_argparse_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def _utc_now() -> datetime.datetime:
+    return datetime.datetime.now().replace(tzinfo=datetime.timezone.utc)
+
+
 def _parse_datetime(value: str) -> datetime.datetime:
     return iso8601.parse_date(value)
 
@@ -146,6 +150,12 @@ def _get_matching_directories(
     return [d for d in directories if d.source_path in paths]
 
 
+def cmd_default(config: config.Config, arguments: argparse.Namespace) -> None:
+    timestamp = _utc_now()
+    for directory in backup.Directory.all_from_config(config):
+        backup.backup_directory(directory, timestamp=timestamp)
+
+
 def cmd_backup(config: config.Config, arguments: argparse.Namespace) -> None:
     directories = backup.Directory.all_from_config(config)
 
@@ -163,7 +173,7 @@ def cmd_backup(config: config.Config, arguments: argparse.Namespace) -> None:
 
 
 def cmd_test_rotator(config: config.Config, arguments: argparse.Namespace) -> None:
-    timestamp = datetime.datetime.now().replace(tzinfo=datetime.timezone.utc)
+    timestamp = _utc_now()
     rotator = config.get(rotators.Rotator, arguments.rotator)  # type: ignore
     logger.log(logging.MESSAGE, f"Using rotator {rotator}, type {type(rotator).__name__}")
 
