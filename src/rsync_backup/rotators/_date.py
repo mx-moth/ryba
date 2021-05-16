@@ -4,6 +4,7 @@ import typing as t
 
 import attr
 
+from .. import targets
 from ._base import Rotator, Verdict
 
 
@@ -39,6 +40,31 @@ class Bucket(t.Generic[TValue]):
             return winners[:self.count]
 
 
+def _year(bucket: targets.Backup) -> int:
+    t = bucket.timestamp
+    return t.year
+
+
+def _month(bucket: targets.Backup) -> t.Tuple[int, int]:
+    t = bucket.timestamp
+    return t.year, t.month
+
+
+def _week(bucket: targets.Backup) -> t.Tuple[int, int]:
+    t = bucket.timestamp
+    return t.isocalendar()[:2]
+
+
+def _day(bucket: targets.Backup) -> t.Tuple[int, int, int]:
+    t = bucket.timestamp
+    return t.year, t.month, t.day
+
+
+def _hour(bucket: targets.Backup) -> t.Tuple[int, int, int, int]:
+    t = bucket.timestamp
+    return t.year, t.month, t.day, t.hour
+
+
 @attr.s(auto_attribs=True, kw_only=True)
 class DateBucket(Rotator):
     """
@@ -65,11 +91,11 @@ class DateBucket(Rotator):
     def from_options(cls, name: str, rotator: dict) -> 'DateBucket':
         return cls(name=name, **rotator)
 
-    def partition_backups(
+    def rotate_backups(
         self,
         timestamp: datetime.datetime,
-        backups: t.List[datetime.datetime],
-    ) -> t.Iterable[t.Tuple[datetime.datetime, Verdict, str]]:
+        backups: t.List[targets.Backup],
+    ) -> t.Iterable[t.Tuple[targets.Backup, Verdict, str]]:
         winners = self.get_winners(backups)
         for backup_date in backups:
             if backup_date in winners:
@@ -80,27 +106,27 @@ class DateBucket(Rotator):
                 explanation = "Not kept by any bucket"
             yield backup_date, verdict, explanation
 
-    def get_winners(self, backups: t.List[datetime.datetime]) -> t.Dict[datetime.datetime, t.List[str]]:
+    def get_winners(self, backups: t.List[targets.Backup]) -> t.Dict[targets.Backup, t.List[str]]:
         backups = sorted(backups)
         decider = max if self.prefer_newest else min
 
-        buckets: t.List[Bucket[datetime.datetime]] = []
+        buckets: t.List[Bucket[targets.Backup]] = []
         if self.year:
-            buckets.append(Bucket(name="Year", count=self.year, decider=decider, grouper=lambda d: (d.year,)))
+            buckets.append(Bucket(name="Year", count=self.year, decider=decider, grouper=_year))
         if self.month:
-            buckets.append(Bucket(name="Month", count=self.month, decider=decider, grouper=lambda d: (d.year, d.month)))
+            buckets.append(Bucket(name="Month", count=self.month, decider=decider, grouper=_month))
         if self.week:
-            buckets.append(Bucket(name="Week", count=self.week, decider=decider, grouper=lambda d: d.isocalendar()[:2]))
+            buckets.append(Bucket(name="Week", count=self.week, decider=decider, grouper=_week))
         if self.day:
-            buckets.append(Bucket(name="Day", count=self.day, decider=decider, grouper=lambda d: (d.year, d.month, d.day)))
+            buckets.append(Bucket(name="Day", count=self.day, decider=decider, grouper=_day))
         if self.hour:
-            buckets.append(Bucket(name="Hour", count=self.hour, decider=decider, grouper=lambda d: (d.year, d.month, d.day, d.hour)))
+            buckets.append(Bucket(name="Hour", count=self.hour, decider=decider, grouper=_hour))
 
         for backup in backups:
             for bucket in buckets:
                 bucket.add(backup)
 
-        winners: t.Dict[datetime.datetime, t.List[str]] = collections.defaultdict(list)
+        winners: t.Dict[targets.Backup, t.List[str]] = collections.defaultdict(list)
         for bucket in buckets:
             for to_keep in bucket.get_winners():
                 winners[to_keep].append(bucket.name)

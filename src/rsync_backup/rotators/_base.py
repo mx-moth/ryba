@@ -3,7 +3,7 @@ import datetime
 import enum
 import typing as t
 
-from rsync_backup import config, registry
+from rsync_backup import config, registry, targets
 
 Verdict = enum.Enum("Verdict", ["keep", "drop"])
 
@@ -23,10 +23,25 @@ class Rotator(config.Configurable, abc.ABC):
     @abc.abstractmethod
     def from_options(cls, name: str, rotator: dict) -> 'Rotator': ...
 
+    def should_rotate(self) -> t.Union[t.Literal[True], str]:
+        """
+        Should backup rotation be attempted? Return either the value True, or
+        a string explanation of why not.
+        """
+        return True
+
     @abc.abstractmethod
-    def partition_backups(
-        self, timestamp: datetime.datetime, backups: t.List[datetime.datetime]
-    ) -> t.Iterable[t.Tuple[datetime.datetime, Verdict, str]]: ...
+    def rotate_backups(
+        self, timestamp: datetime.datetime, backups: t.List[targets.Backup]
+    ) -> t.Iterable[t.Tuple[targets.Backup, Verdict, str]]:
+        """
+        Decide how to rotate a set of backups. `timestamp` is the current
+        timestamp, while `backups` is a list of backup timestamps.
+
+        Implementations should return a tuple of `(backup, verdict, reason)`
+        for each backup timestamp, where `verdict` is `Verdict.keep` or
+        `Verdict.drop`, and `reason` is a short explanation of the verdict.
+        """
 
     def __str__(self) -> str:
         return self.name

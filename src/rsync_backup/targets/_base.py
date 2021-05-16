@@ -1,8 +1,18 @@
 import abc
+import datetime
 import pathlib
 import typing as t
 
-from .. import config, exceptions, registry
+import attr
+import iso8601
+
+from .. import config, constants, exceptions, registry
+
+
+@attr.s(auto_attribs=True, kw_only=True, frozen=True)
+class Backup:
+    name: str = attr.ib(order=False)
+    timestamp: datetime.datetime
 
 
 class Target(config.Configurable, abc.ABC):
@@ -67,6 +77,22 @@ class TargetContext(t.ContextManager['TargetContext']):
 
     @abc.abstractmethod
     def list_directory(self, path: pathlib.Path) -> t.List[str]: ...
+
+    def list_backups(self, path: pathlib.Path) -> t.Iterable[Backup]:
+        """
+        Find all the backups in a directory. A `(directory name, timestamp)`
+        tuple is returned for each backup directory found.
+        """
+        entries = self.list_directory(path)
+        for entry in entries:
+            timestamp_file = path / entry / constants.TIMESTAMP_FILE_NAME
+            if not self.exists(timestamp_file):
+                continue
+            content = self.read_file(timestamp_file).decode()
+            try:
+                yield Backup(name=entry, timestamp=iso8601.parse_date(content))
+            except ValueError:
+                continue
 
 
 target_types = registry.Registry[t.Type[Target]]()

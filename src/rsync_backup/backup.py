@@ -5,7 +5,6 @@ import subprocess
 import typing as t
 
 import attr
-import iso8601
 
 from . import config, constants, exceptions, logging, rotators, targets
 
@@ -263,34 +262,26 @@ def _rotate_snapshot(
     """
     Rotate the existing backups using the defined keeper for this Directory.
     """
+    if (reason := directory.rotate.should_rotate()) is not True:
+        logger.log(logging.INFO, f"Not rotating backups: {reason}")
+        return
+
     logger.log(logging.INFO, f"Rotating backups using '{directory.rotate}' strategy")
-    entries = context.list_directory(directory.target_path)
-    backups: t.Dict[datetime.datetime, str] = {}
-    for entry in entries:
-        timestamp_file = directory.target_path / entry / constants.TIMESTAMP_FILE_NAME
-        if not context.exists(timestamp_file):
-            continue
-        try:
-            backup_datetime = iso8601.parse_date(context.read_file(timestamp_file).decode())
-        except ValueError:
-            continue
-        backups[backup_datetime] = entry
+    backups = list(context.list_backups(directory.target_path))
 
     # If this is a dry run, a current snapshot will not have been made.
     # To simulate the backup process properly, append a fictitious snapshot
     # that would have been created in a normal run
     if dry_run:
-        latest_name = _snapshot_name(directory, timestamp)
-        entries.append(latest_name)
-        backups[timestamp] = latest_name
+        backups.append(targets.Backup(
+            name=_snapshot_name(directory, timestamp),
+            timestamp=timestamp))
 
-    backup_timestamps = list(backups.keys())
-    results = directory.rotate.partition_backups(timestamp, backup_timestamps)
-    for backup_date, verdict, explanation in sorted(results):
-        entry = backups[backup_date]
-        logger.log(logging.INFO, f"  - {backups[backup_date]}: {verdict.name}. {explanation}")
+    results = directory.rotate.rotate_backups(timestamp, backups)
+    for backup, verdict, explanation in sorted(results):
+        logger.log(logging.INFO, f"  - {backup.name}: {verdict.name}. {explanation}")
         if not dry_run and verdict is rotators.Verdict.drop:
-            entry_path = context.make_path(directory.target_path / entry)
+            entry_path = context.make_path(directory.target_path / backup.name)
             context.execute(["chmod", "-R", "u+wX", str(entry_path)])
             context.execute(["rm", "-rf", str(entry_path)])
 

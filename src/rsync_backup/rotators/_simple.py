@@ -3,7 +3,7 @@ import typing as t
 
 import attr
 
-from .. import exceptions
+from .. import exceptions, targets
 from ._base import Rotator, Verdict
 
 
@@ -17,10 +17,13 @@ class KeepAll(Rotator):
             raise exceptions.ConfigError("'all' stragegy does not take any options")
         return cls(name=name)
 
-    def partition_backups(
-        self, timestamp: datetime.datetime, backups: t.List[datetime.datetime]
-    ) -> t.Iterable[t.Tuple[datetime.datetime, Verdict, str]]:
-        return ((backup, Verdict.keep, "Keep all backups") for backup in backups)
+    def should_rotate(self) -> str:
+        return "All backups will be kept"
+
+    def rotate_backups(
+        self, timestamp: datetime.datetime, backups: t.List[targets.Backup]
+    ) -> t.Iterable[t.Tuple[targets.Backup, Verdict, str]]:
+        raise NotImplementedError("KeepAll rotator shouldn't rotate anything")
 
 
 @attr.s(auto_attribs=True, kw_only=True)
@@ -32,9 +35,9 @@ class KeepLatest(Rotator):
     def from_options(cls, name: str, rotator: dict) -> 'KeepLatest':
         return cls(name=name, **rotator)
 
-    def partition_backups(
-        self, timestamp: datetime.datetime, backups: t.List[datetime.datetime]
-    ) -> t.Iterable[t.Tuple[datetime.datetime, Verdict, str]]:
+    def rotate_backups(
+        self, timestamp: datetime.datetime, backups: t.List[targets.Backup]
+    ) -> t.Iterable[t.Tuple[targets.Backup, Verdict, str]]:
         backups = sorted(backups)
         to_drop = backups[:-self.count]
         to_keep = backups[-self.count:]
