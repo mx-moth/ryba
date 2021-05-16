@@ -25,7 +25,7 @@ def setup_logging(verbose_level: t.Union[t.Literal[0], t.Literal[1], t.Literal[2
             },
         },
         "loggers": {
-            "rsync_backup": {
+            "ryba": {
                 "handlers": ["console"],
                 "level": logging.DEBUG,
             },

@@ -1,6 +1,6 @@
-===================
-python-rsync-backup
-===================
+=======
+🐟 ryba
+=======
 
 Backs up directories on your computer to remote targets using `rsync`,
 Creates a timestamped snapshot of the current state,
@@ -11,19 +11,19 @@ Installation
 
 .. code-block:: shell
 
-    $ pip3 install --user "python-rsync-backup"
+    $ pip3 install --user "ryba"
 
 Usage
 =====
 
-``python-rsync-backup`` uses a configuration file to store all the backup source and target directories.
+``ryba`` uses a configuration file to store all the backup source and target directories.
 See `Configuration`_ for instructions on creating a configuration file.
 
-To back up every configured directory, run the ``python-rsync-backup`` command:
+To back up every configured directory, run the ``ryba`` command:
 
 .. code-block:: shell
 
-    $ python-rsync-backup
+    $ ryba
 
 A few commonly useful options:
 
@@ -34,12 +34,12 @@ A few commonly useful options:
 ``-d <directory>``, ``--directory <directory>``
     Back up only this configured directory.
 
-See ``python-rsync-backup --help`` for more options.
+See ``ryba --help`` for more options.
 
 Configuration
 =============
 
-Configuration lives in the file ``~/.config/python-rsync-backup/config.toml``.
+Configuration lives in the file ``~/.config/ryba/config.toml``.
 It uses the `TOML`_ file format.
 
 Three things need to be configured:

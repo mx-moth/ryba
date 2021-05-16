@@ -3,7 +3,7 @@ import datetime
 import enum
 import typing as t
 
-from rsync_backup import config, registry, targets
+from .. import config, registry, targets
 
 Verdict = enum.Enum("Verdict", ["keep", "drop"])
 

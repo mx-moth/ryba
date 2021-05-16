@@ -8,7 +8,7 @@ import xdg
 
 
 def get_default_config_path() -> pathlib.Path:
-    return xdg.xdg_config_home() / 'python-rsync-backup' / 'config.toml'
+    return xdg.xdg_config_home() / 'ryba' / 'config.toml'
 
 
 class Configurable(abc.ABC):

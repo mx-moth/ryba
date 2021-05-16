@@ -38,7 +38,7 @@ def handle_errors() -> t.Iterator[None]:
 
 def _get_argparse_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        "python-rsync-backup",
+        "ryba",
         description=__doc__,
     )
     parser.add_argument(
