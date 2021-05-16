@@ -70,7 +70,9 @@ The following is the minimal configuration to define a source directory:
     and the path on the target where backups should be created,
     separated by a colon ``:``.
 ``rotate``
-    A rotation strategy.
+    A rotation strategy. Optional.
+    If this is not set, all backups will be kept.
+    A backup rotation strategy can be defined later, and old backups will be cleaned up.
 
 There are a number of optional fields you can also define:
 

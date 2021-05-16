@@ -11,7 +11,7 @@ class Directory:
     source_path: pathlib.Path
     target_path: pathlib.Path
     target: targets.Target
-    rotate: rotators.Rotator
+    rotate: t.Optional[rotators.Rotator] = None
 
     exclude_from: t.Optional[pathlib.Path] = None
     exclude_files: t.List[str] = attr.ib(factory=list)
@@ -39,7 +39,10 @@ class Directory:
         target_path = pathlib.Path(target_bits[1]).expanduser()
 
         target = config.get((targets.Target, target_bits[0]))  # type: ignore
-        rotate = config.get((rotators.Rotator, directory.pop('rotate')))  # type: ignore
+        if (rotator_name := directory.pop('rotate', None)) is not None:
+            rotate = config.get((rotators.Rotator, rotator_name))  # type: ignore
+        else:
+            rotate = None
 
         exclude_from = None
         if 'exclude_from' in directory:

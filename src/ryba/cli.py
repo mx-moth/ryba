@@ -170,7 +170,7 @@ def cmd_backup(config: config.Config, arguments: argparse.Namespace) -> None:
 
     if arguments.directories:
         directories_to_backup = _get_matching_directories(
-            directories, [p.expanduser() for p in arguments.directories])
+            directories_to_backup, [p.expanduser() for p in arguments.directories])
 
     for directory in directories_to_backup:
         backup.backup_directory(

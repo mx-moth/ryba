@@ -191,6 +191,10 @@ def _rotate_snapshot(
     """
     Rotate the existing backups using the defined keeper for this Directory.
     """
+    if directory.rotate is None:
+        logger.log(logging.INFO, "Not rotating backups: no rotator configured")
+        return
+
     if (reason := directory.rotate.should_rotate()) is not True:
         logger.log(logging.INFO, f"Not rotating backups: {reason}")
         return
