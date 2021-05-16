@@ -67,9 +67,9 @@ class ColouredLeaderFormatter(logging.Formatter):
     default_msec_format = None  # type: ignore
 
     LEVEL_COLORS = {
-        DEBUG: '1;37',
-        INFO: '1;35',
-        MESSAGE: '1;36',
+        DEBUG: '1;38;5;244',
+        INFO: '1;38;5;164',
+        MESSAGE: '1;38;5;26',
         WARNING: '1;33',
         ERROR: '1;31',
         CRITICAL: '1;31;1',
