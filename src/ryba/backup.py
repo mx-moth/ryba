@@ -43,8 +43,8 @@ class Directory:
         source_path = pathlib.Path(directory.pop("source")).expanduser()
         target_path = pathlib.Path(target_bits[1]).expanduser()
 
-        target = config.get(targets.Target, target_bits[0])  # type: ignore
-        rotate = config.get(rotators.Rotator, directory.pop('rotate'))  # type: ignore
+        target = config.get((targets.Target, target_bits[0]))  # type: ignore
+        rotate = config.get((rotators.Rotator, directory.pop('rotate')))  # type: ignore
 
         exclude_from = None
         if 'exclude_from' in directory:
@@ -88,9 +88,9 @@ class Directory:
 def backup_directory(
     directory: Directory,
     *,
+    config: config.Config,
     timestamp: datetime.datetime,
     dry_run: bool = False,
-    verbose: bool = False,
     send_files: bool = True,
     create_snapshot: bool = True,
     rotate_snapshot: bool = True,
@@ -110,7 +110,7 @@ def backup_directory(
     """
     with directory.target.connect() as context:
         backup_directory_with_context(
-            directory, context, timestamp=timestamp, dry_run=dry_run,
+            directory, context, config=config, timestamp=timestamp, dry_run=dry_run,
             send_files=send_files, create_snapshot=create_snapshot, rotate_snapshot=rotate_snapshot)
 
 
@@ -118,9 +118,9 @@ def backup_directory_with_context(
     directory: Directory,
     context: targets.TargetContext,
     *,
+    config: config.Config,
     timestamp: datetime.datetime,
     dry_run: bool = False,
-    verbose: bool = False,
     send_files: bool = True,
     create_snapshot: bool = True,
     rotate_snapshot: bool = True,
@@ -128,35 +128,40 @@ def backup_directory_with_context(
     logger.log(logging.MESSAGE, "Backing up %s", directory)
     if send_files:
         _send_files(
-            directory, context, dry_run=dry_run, verbose=verbose)
+            directory, context, config=config, dry_run=dry_run)
 
     if create_snapshot:
         _create_snapshot(
-            directory, context,
-            dry_run=dry_run, verbose=verbose, timestamp=timestamp)
+            directory, context, dry_run=dry_run, timestamp=timestamp)
 
     if rotate_snapshot:
         _rotate_snapshot(
-            directory, context,
-            dry_run=dry_run, verbose=verbose, timestamp=timestamp)
+            directory, context, dry_run=dry_run, timestamp=timestamp)
 
 
 def _send_files(
     directory: Directory,
     context: targets.TargetContext,
     *,
-    dry_run: bool = False,
-    verbose: bool = False,
+    config: config.Config,
+    dry_run: bool,
 ) -> None:
     """Copy files from the source to the target using rsync."""
     # The following flags are inspired by python-rsync-system-backup
     command = ['rsync']
 
     command.append('--human-readable')
-    if verbose:
+    verbosity = config.get(logging.Verbosity)
+    if verbosity is logging.Verbosity.all:
+        # Turn on fairly verbose logging for rsync
         command.append('--verbose')
+    elif verbosity is logging.Verbosity.silent:
+        # rsync is silent by default
+        pass
     else:
+        # Some minimal rsync output
         command.append('--info=progress2,stats')
+
     if dry_run:
         command.append('--dry-run')
 
@@ -230,8 +235,7 @@ def _create_snapshot(
     context: targets.TargetContext,
     *,
     timestamp: datetime.datetime,
-    dry_run: bool = False,
-    verbose: bool = False,
+    dry_run: bool,
 ) -> None:
     """
     Create a snapshot of the current backup for this Directory.
@@ -259,8 +263,7 @@ def _rotate_snapshot(
     context: targets.TargetContext,
     *,
     timestamp: datetime.datetime,
-    dry_run: bool = False,
-    verbose: bool = False,
+    dry_run: bool,
 ) -> None:
     """
     Rotate the existing backups using the defined keeper for this Directory.

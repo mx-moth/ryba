@@ -19,7 +19,14 @@ def main() -> None:
     with handle_errors():
         arguments = get_arguments()
         config = get_config(arguments)
-        logging.setup_logging(min(arguments.verbosity, 3))
+
+        if arguments.verbosity is not None:
+            verbosity = logging.Verbosity(min(arguments.verbosity + 1, 3))
+        else:
+            verbosity = logging.Verbosity(config['ryba']['verbosity'])
+        config.set(logging.Verbosity, verbosity)
+
+        logging.setup_logging(config)
         arguments.func(config, arguments)
 
 
@@ -53,13 +60,14 @@ def _get_argparse_parser() -> argparse.ArgumentParser:
             "Include more output when running. "
             "Use multiple times to make it even more verbose."
         ),
-        action="count", default=1,
+        action="count",
     )
     verbosity.add_argument(
         "-q", "--quiet", dest="verbosity",
         help="Turn off all output except errors",
         action="store_const", const=0,
     )
+    parser.set_defaults(verbosity=None)
     parser.set_defaults(func=cmd_default)
 
     subparsers = parser.add_subparsers(title="Commands")
@@ -153,7 +161,7 @@ def _get_matching_directories(
 def cmd_default(config: config.Config, arguments: argparse.Namespace) -> None:
     timestamp = _utc_now()
     for directory in backup.Directory.all_from_config(config):
-        backup.backup_directory(directory, timestamp=timestamp)
+        backup.backup_directory(directory, config=config, timestamp=timestamp)
 
 
 def cmd_backup(config: config.Config, arguments: argparse.Namespace) -> None:
@@ -165,16 +173,15 @@ def cmd_backup(config: config.Config, arguments: argparse.Namespace) -> None:
 
     for directory in directories:
         backup.backup_directory(
-            directory,
+            directory, config=config,
             dry_run=arguments.dry_run,
-            verbose=arguments.verbosity > 1,
             timestamp=arguments.timestamp,
         )
 
 
 def cmd_test_rotator(config: config.Config, arguments: argparse.Namespace) -> None:
     timestamp = _utc_now()
-    rotator = config.get(rotators.Rotator, arguments.rotator)  # type: ignore
+    rotator = config.get((rotators.Rotator, arguments.rotator))  # type: ignore
     logger.log(logging.MESSAGE, f"Using rotator {rotator}, type {type(rotator).__name__}")
 
     if arguments.directory:
