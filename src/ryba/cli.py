@@ -10,8 +10,8 @@ import typing as t
 
 import iso8601
 
-from . import (
-    backup, config, directories, exceptions, logging, rotators, targets)
+from . import config, directories, exceptions, logging, rotators, targets
+from .commands import backup, rotate
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +36,7 @@ def handle_errors() -> t.Iterator[None]:
     try:
         yield
     except exceptions.CommandError as exc:
-        sys.stderr.write(exc.message)
+        logger.error(exc.message)
         sys.exit(exc.exit_code)
     except KeyboardInterrupt:
         sys.exit(1)
@@ -202,8 +202,9 @@ def cmd_test_rotator(config: config.Config, arguments: argparse.Namespace) -> No
     if (reason := rotator.should_rotate()) is not True:
         logger.log(logging.MESSAGE, f"Not rotating backups: {reason}")
 
-    for b, verdict, reason in sorted(rotator.rotate_backups(timestamp, list(backups))):
-        logger.log(logging.MESSAGE, f" - {b.name}: {verdict.name}. {reason}")
+    verdicts = sorted(rotator.rotate_backups(timestamp, list(backups)))
+    for message in map(rotate.format_verdict_tuple, verdicts):
+        logger.log(logging.MESSAGE, message)
 
 
 # Config helpers

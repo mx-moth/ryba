@@ -1,3 +1,4 @@
+import datetime
 import pathlib
 import typing as t
 
@@ -78,6 +79,14 @@ class Directory:
                 return exclude_from
             else:
                 return None
+
+    def snapshot_name(self, timestamp: datetime.datetime) -> str:
+        """
+        Convert a timestamp into a snapshot directory name.
+        This should include the timestamp to make it unique,
+        but the timestamp is never parsed from this filename.
+        """
+        return timestamp.strftime("snapshot-%Y-%m-%dT%H:%M:%S")
 
     def __str__(self) -> str:
         return f"{str(self.source_path)!r} to {self.target.name}:{str(self.target_path)!r}"

@@ -2,8 +2,8 @@ import datetime
 import shlex
 import subprocess
 
-from . import (
-    config, constants, directories, exceptions, logging, rotators, targets)
+from .. import config, constants, directories, exceptions, logging, targets
+from . import rotate, snapshot
 
 logger = logging.getLogger(__name__)
 
@@ -54,11 +54,11 @@ def backup_directory_with_context(
             directory, context, config=config, dry_run=dry_run)
 
     if create_snapshot:
-        _create_snapshot(
+        snapshot.create_snapshot(
             directory, context, dry_run=dry_run, timestamp=timestamp)
 
     if rotate_snapshot:
-        _rotate_snapshot(
+        rotate.rotate_directory(
             directory, context, dry_run=dry_run, timestamp=timestamp)
 
 
@@ -151,81 +151,6 @@ def _send_files(
     else:
         logger.log(logging.ERROR, "Backup failed! (rsync exited with %i)", result.returncode)
         raise exceptions.RsyncError("rsync call failed", result.returncode)
-
-
-def _create_snapshot(
-    directory: directories.Directory,
-    context: targets.TargetContext,
-    *,
-    timestamp: datetime.datetime,
-    dry_run: bool,
-) -> None:
-    """
-    Create a snapshot of the current backup for this Directory.
-    """
-    target_directory = directory.target_path
-    snapshot_name = _snapshot_name(directory, timestamp)
-    current = target_directory / constants.CURRENT_SNAPSHOT_NAME
-    snapshot = target_directory / snapshot_name
-    logger.log(logging.INFO, "Creating snapshot %s", snapshot_name)
-
-    cmd = [
-        "cp", "--archive", "--link", "--no-target-directory", "--force",
-        str(context.make_path(current)), str(context.make_path(snapshot)),
-    ]
-    logger.log(logging.DEBUG, "remote $ %s", shlex.join(cmd))
-    if not dry_run:
-        context.execute(cmd)
-        context.write_file(
-            snapshot / constants.TIMESTAMP_FILE_NAME,
-            timestamp.isoformat().encode())
-
-
-def _rotate_snapshot(
-    directory: directories.Directory,
-    context: targets.TargetContext,
-    *,
-    timestamp: datetime.datetime,
-    dry_run: bool,
-) -> None:
-    """
-    Rotate the existing backups using the defined keeper for this Directory.
-    """
-    if directory.rotate is None:
-        logger.log(logging.INFO, "Not rotating backups: no rotator configured")
-        return
-
-    if (reason := directory.rotate.should_rotate()) is not True:
-        logger.log(logging.INFO, f"Not rotating backups: {reason}")
-        return
-
-    logger.log(logging.INFO, f"Rotating backups using '{directory.rotate}' strategy")
-    backups = list(context.list_backups(directory.target_path))
-
-    # If this is a dry run, a current snapshot will not have been made.
-    # To simulate the backup process properly, append a fictitious snapshot
-    # that would have been created in a normal run
-    if dry_run:
-        backups.append(targets.Backup(
-            name=_snapshot_name(directory, timestamp),
-            timestamp=timestamp))
-
-    results = directory.rotate.rotate_backups(timestamp, backups)
-    for backup, verdict, explanation in sorted(results):
-        logger.log(logging.INFO, f"  - {backup.name}: {verdict.name}. {explanation}")
-        if not dry_run and verdict is rotators.Verdict.drop:
-            entry_path = context.make_path(directory.target_path / backup.name)
-            context.execute(["chmod", "-R", "u+wX", str(entry_path)])
-            context.execute(["rm", "-rf", str(entry_path)])
-
-
-def _snapshot_name(directory: directories.Directory, timestamp: datetime.datetime) -> str:
-    """
-    Convert a timestamp into a snapshot directory name.
-    This should include the timestamp to make it unique,
-    but the timestamp is never parsed from this filename.
-    """
-    return timestamp.strftime("snapshot-%Y-%m-%dT%H:%M:%S")
 
 
 def _ensure_trailing_slash(path: str) -> str:
