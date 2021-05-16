@@ -154,7 +154,7 @@ def _send_files(
 
 
 def _create_snapshot(
-    directory: Directory,
+    directory: directories.Directory,
     context: targets.TargetContext,
     *,
     timestamp: datetime.datetime,
