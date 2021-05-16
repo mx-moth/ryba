@@ -10,7 +10,8 @@ import typing as t
 
 import iso8601
 
-from . import backup, config, exceptions, logging, rotators, targets
+from . import (
+    backup, config, directories, exceptions, logging, rotators, targets)
 
 logger = logging.getLogger(__name__)
 
@@ -144,8 +145,8 @@ def get_arguments() -> argparse.Namespace:
 # Commands to run
 
 def _get_matching_directories(
-    directories: t.List[backup.Directory], paths: t.Iterable[pathlib.Path]
-) -> t.List[backup.Directory]:
+    directories: t.List[directories.Directory], paths: t.Iterable[pathlib.Path]
+) -> t.List[directories.Directory]:
     paths = set(paths)
     missing_directories = [
         p for p in paths
@@ -160,18 +161,18 @@ def _get_matching_directories(
 
 def cmd_default(config: config.Config, arguments: argparse.Namespace) -> None:
     timestamp = _utc_now()
-    for directory in backup.Directory.all_from_config(config):
+    for directory in directories.Directory.all_from_config(config):
         backup.backup_directory(directory, config=config, timestamp=timestamp)
 
 
 def cmd_backup(config: config.Config, arguments: argparse.Namespace) -> None:
-    directories = backup.Directory.all_from_config(config)
+    directories_to_backup = directories.Directory.all_from_config(config)
 
     if arguments.directories:
-        directories = _get_matching_directories(
+        directories_to_backup = _get_matching_directories(
             directories, [p.expanduser() for p in arguments.directories])
 
-    for directory in directories:
+    for directory in directories_to_backup:
         backup.backup_directory(
             directory, config=config,
             dry_run=arguments.dry_run,
@@ -186,7 +187,7 @@ def cmd_test_rotator(config: config.Config, arguments: argparse.Namespace) -> No
 
     if arguments.directory:
         directory = next(iter(_get_matching_directories(
-            backup.Directory.all_from_config(config),
+            directories.Directory.all_from_config(config),
             [arguments.directory.expanduser()])))
         with directory.target.connect() as context:
             backups = context.list_backups(directory.target_path)
