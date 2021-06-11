@@ -27,14 +27,14 @@ To back up every configured directory, run the ``ryba`` command:
 
 A few commonly useful options:
 
-``--dry-run``
-    Do not make any changes, only print what would happen.
-``-v``, ``--verbose``
+``ryba -v``
     Print more information when running. Use a second time for even more verbosity.
-``-d <directory>``, ``--directory <directory>``
+``ryba backup --dry-run``
+    Do not make any changes, only print what would happen.
+``ryba backup --directory <directory>``
     Back up only this configured directory.
 
-See ``ryba --help`` for more options.
+See ``ryba --help`` and ``ryba backup --help`` for more options.
 
 Configuration
 =============
