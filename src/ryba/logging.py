@@ -60,7 +60,7 @@ def setup_logging(config: config.Config) -> None:
     })
 
 
-def command(command: t.List[str], hostname: t.Optional[str]) -> str:
+def command(command: t.List[str], hostname: t.Optional[str] = None) -> str:
     prefix = '$ '
     if hostname:
         prefix = hostname + prefix
