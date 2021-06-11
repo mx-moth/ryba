@@ -82,7 +82,7 @@ class SSHContext(_base.TargetContext):
         return t.cast(paramiko.SFTPClient, self.client._open_sftp_client())
 
     def __enter__(self) -> 'SSHContext':
-        self._stack.__enter__
+        self._stack.__enter__()
         self._stack.enter_context(self.client)
         return self
 
