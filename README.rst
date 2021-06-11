@@ -95,6 +95,18 @@ Targets must have a name.
 To define a target named "delorian", make a section named ``[target.delorian]``.
 The options available for targets depend on the type.
 
+Local targets
+*************
+
+Backs up one directory on your local machine to another.
+Useful for backing up to a mounted external hard drive, for example.
+
+.. code-block:: toml
+
+    [target.tardis]
+    type = "local"
+    path = "/mount/tardis"
+
 SSH targets
 ***********
 
@@ -103,7 +115,7 @@ Defaults for some SSH options are pulled from ``~/.ssh/config`` if possible.
 
 .. code-block:: toml
 
-    [target.delorian]
+    [target.briefcase]
     type = "ssh"
 
 Available options:
