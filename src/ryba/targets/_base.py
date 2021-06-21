@@ -15,6 +15,12 @@ class Backup:
     timestamp: datetime.datetime
 
 
+class ContextException(exceptions.CommandError):
+    """
+    Raised when there is an error connecting to / activating the target context.
+    """
+
+
 class Target(config.Configurable, abc.ABC):
     name: str
 

@@ -8,7 +8,9 @@ import typing as t
 
 import attr
 import paramiko.config
+import paramiko.ssh_exception
 import spur
+import spur.ssh
 
 from .. import exceptions, logging
 from . import _base
@@ -84,6 +86,11 @@ class SSHContext(_base.TargetContext):
     def __enter__(self) -> 'SSHContext':
         self._stack.__enter__()
         self._stack.enter_context(self.client)
+        try:
+            self._test_connection()
+        except Exception:
+            self._stack.close()
+            raise
         return self
 
     def __exit__(
@@ -96,6 +103,27 @@ class SSHContext(_base.TargetContext):
         with contextlib.suppress(AttributeError):
             del self.sftp
         del self.client
+
+    def _test_connection(self) -> None:
+        """
+        See if the SSH connection works, raising a ContextError if it does not.
+        """
+        try:
+            # Run a simple noop command to see if the target is available, that
+            # we can authenticate, and that we can run commands.
+            self.client.run(['test', 'true'])
+        except spur.ssh.ConnectionError as exc:
+            context = exc.__context__
+            if context is not None and isinstance(context, paramiko.ssh_exception.SSHException):
+                message = str(exc.__context__)
+                if isinstance(context, paramiko.ssh_exception.PasswordRequiredException):
+                    message = "\n".join([
+                        message,
+                        "Try unlocking your private key file and adding it to your SSH agent using",
+                        "    $ ssh-add",
+                    ])
+                raise _base.ContextException(message) from exc
+            raise _base.ContextException(str(exc)) from exc
 
     def make_path(self, path: pathlib.Path) -> pathlib.Path:
         if path.is_absolute():
